@@ -1,4 +1,4 @@
--e Flask==3.1.1
+Flask==3.1.1
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
 Werkzeug==3.1.3
