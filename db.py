@@ -1,18 +1,32 @@
-import psycopg2
 import os
+import sqlite3
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
+
+# Try to import psycopg2, use SQLite if not available
+try:
+    import psycopg2
+    HAS_POSTGRESQL = True
+except ImportError:
+    HAS_POSTGRESQL = False
+    print("Warning: psycopg2 not found, using SQLite fallback")
 
 
 def get_db():
     url = DATABASE_URL
-    if not url:
-        # Use SQLite fallback if no PostgreSQL URL is provided
-        import sqlite3
+    
+    # Always use SQLite if psycopg2 is not available
+    if not HAS_POSTGRESQL or not url:
         return sqlite3.connect("betting_app.db")
-    if url and url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
-    return psycopg2.connect(url)
+    
+    # Use PostgreSQL if available and URL is provided
+    try:
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        return psycopg2.connect(url)
+    except Exception as e:
+        print(f"PostgreSQL connection failed: {e}, falling back to SQLite")
+        return sqlite3.connect("betting_app.db")
 
 
 def init_db():
@@ -21,7 +35,7 @@ def init_db():
         c = conn.cursor()
 
         # Check if using SQLite or PostgreSQL
-        is_sqlite = DATABASE_URL is None
+        is_sqlite = not HAS_POSTGRESQL or DATABASE_URL is None
 
         if is_sqlite:
             # SQLite schema
